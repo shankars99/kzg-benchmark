@@ -10,6 +10,21 @@ const G: u64 = 7;
 #[PrimeFieldReprEndianness = "little"]
 pub struct Fp([u64; 4]);
 
+impl Fp {
+    pub fn into_f64(&self) -> f64 {
+        let x = self.to_repr();
+        let x = x.as_ref();
+
+        let base: u64 = 256;
+
+        let x_as_u64: u64 = (0..8)
+            .map(|i| (x[i] as u64) * base.pow(i as u32))
+            .fold(0, |acc, term| acc + term);
+
+        x_as_u64 as f64
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct FpPoly {
     pub c: Poly<f64>,
@@ -34,7 +49,7 @@ impl FpPoly {
             n: c.len() as u64,
         }
     }
-    pub fn from_u64(c: Vec<f64>) -> Self {
+    pub fn from_f64(c: Vec<f64>) -> Self {
         let c_fp: Vec<Fp> = (c.iter()).map(|&r| Fp::from(r as u64)).collect();
 
         Self {
@@ -58,9 +73,6 @@ impl FpPoly {
 
 #[cfg(test)]
 mod tests {
-
-    use ff::derive::byteorder::NetworkEndian;
-    use polynomen::poly;
 
     use super::*;
 
@@ -105,5 +117,14 @@ mod tests {
         let poly_q_eval = poly_q.eval_by_val(x);
 
         assert_eq!(poly_n_eval - poly_d_eval, poly_q_eval);
+    }
+
+    #[test]
+    fn fp_to_u64() {
+        let x = u64::MAX as f64;
+        let x_fp = Fp::from(x as u64);
+
+        let y = x_fp.into_f64();
+        assert_eq!(x, y, "the two are not equal");
     }
 }
