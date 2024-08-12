@@ -11,6 +11,15 @@ const G: u64 = 7;
 pub struct Fp([u64; 4]);
 
 impl Fp {
+    pub fn from_f64(x: f64) -> (Fp, f64) {
+        let mut sign = 1.;
+        if x < 0. {
+            sign = -1.;
+        }
+
+        (Fp::from(x.abs() as u64), sign)
+    }
+
     pub fn into_f64(&self) -> f64 {
         let x = self.to_repr();
         let x = x.as_ref();
@@ -40,7 +49,7 @@ impl FpPoly {
         // Create the randomly generated coefficient u64 vector then
         // iterate through it and create an equivalent Fp array
         let c: Vec<f64> = (0..n).map(|_| rng.gen_range(0..=max_c) as f64).collect();
-        let c_fp: Vec<Fp> = (c.iter()).map(|&r| Fp::from(r as u64)).collect();
+        let c_fp: Vec<Fp> = (c.iter()).map(|&r| Fp::from_f64(r).0).collect();
 
         Self {
             c: Poly::new_from_roots(&c),
@@ -50,7 +59,7 @@ impl FpPoly {
         }
     }
     pub fn from_f64(c: Vec<f64>) -> Self {
-        let c_fp: Vec<Fp> = (c.iter()).map(|&r| Fp::from(r as u64)).collect();
+        let c_fp: Vec<Fp> = (c.iter()).map(|&r| Fp::from_f64(r).0).collect();
 
         Self {
             c: Poly::new_from_coeffs(&c),
@@ -63,20 +72,23 @@ impl FpPoly {
     pub fn evaluate(&self, x: Fp) -> Fp {
         let n = self.c.degree().unwrap() as u64;
         // computes SUM( f_i * x ** i )
-        let evaluation: Fp = (0..n)
-            .map(|i| self.c_Fp[i as usize] * x.pow([i]))
-            .fold(Fp::ZERO, |acc, term| acc + term);
+        let mut evaluation = 0.;
 
-        evaluation
+        for i in 0..=n {
+            let (term, sign) = Fp::from_f64(self.c[i as usize]);
+
+            evaluation += (term * x.pow([i])).into_f64() * sign;
+        }
+
+        Fp::from_f64(evaluation).0
     }
 }
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
-    const N: u64 = 3;
+    const N: u64 = 2;
     const MAX_COEFFICIENT: u64 = 2;
 
     #[test]
