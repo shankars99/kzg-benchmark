@@ -2,7 +2,7 @@ use crate::polynomial::{Fp, FpPoly};
 
 use ff::Field;
 use polynomen::Poly;
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 
 #[derive(Debug, Clone)]
 pub struct KZG {
@@ -41,8 +41,7 @@ impl KZG {
 
     pub fn opening(&self) -> (Self, Fp) {
         // generate u as a fiat shamir random variable
-        // let u = Self::fiat_shamir_oracle();
-        let u = Fp::from(5);
+        let u = Self::fiat_shamir_oracle();
 
         // f(x) - f(u)
         // As f(u) is a point with no degree. We can subtract is from the degree(0) term in f(x)
@@ -63,16 +62,9 @@ impl KZG {
         )
     }
 
-    pub fn pedersen_kzg() {}
-
-    pub fn vanilla_kzg(&self) {
-        let x0 = Self::fiat_shamir_oracle();
-        let fx0 = self.f.evaluate(x0);
-    }
-
     fn fiat_shamir_oracle() -> Fp {
-        let rng = thread_rng();
-        Fp::random(rng)
+        let val = thread_rng().gen_range(0..2_i64.pow(16)) as u64;
+        Fp::from(val)
     }
 }
 
